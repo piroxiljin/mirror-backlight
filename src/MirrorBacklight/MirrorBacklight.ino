@@ -13,6 +13,8 @@
 #include <LittleFS.h>
 #include <WiFiConnector.h>
 
+#define VERSION "0.1"
+
 GyverHub hub;
 PairsFile data(&LittleFS, "/data.dat", 3000);
 
@@ -153,12 +155,14 @@ void setup() {
   solid_b = data.get("SolidB");
 
   hub.config(F("MyDevices"), F("Backlight"), "f2bd");  // user-circle icon
+  hub.setVersion(F("piroxiljin/mirror-backlight@" VERSION));
   hub.onBuild(build);
   hub.begin();
 
+
   while (!Serial && millis() < 3000) {};
   Serial.begin(115200);
-  Serial.println("Ready");
+  Serial.println(F("Ready version " VERSION));
 
   String ssid = data.get("ssid").toString();
   String pass = data.get("pass").toString();
