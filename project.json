@@ -1,7 +1,7 @@
 {
   "name": "Mirror Backlight",
   "about": "Проект подсветки для круглого зеркала.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "notes": "Мерцание с использованием PerlinNoise",
   "builds": [
     {

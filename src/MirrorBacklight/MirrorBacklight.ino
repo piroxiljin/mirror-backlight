@@ -15,7 +15,7 @@
 
 #include "ColorConverterLib.h"
 
-#define VERSION "0.1.1"
+#define VERSION "0.1.2"
 
 GyverHub hub;
 PairsFile data(&LittleFS, "/data.dat", 3000);
@@ -132,11 +132,11 @@ void build(gh::Builder& b) {
   b.Switch(&solidModulationSettings.Enabled).label(F("Modulate")).attach(&SolidModulationChanged);
   b.show(modEnabled);
   b.Slider(&solidModulationSettings.HueDepth).label(F("Hue Depth")).range(0, 1.0, 0.001, 3).attach(&SolidModulationChanged);
-  b.Slider(&solidModulationSettings.HueRate).label(F("Hue Rate")).range(0, 1000, 10).attach(&SolidModulationChanged);
+  b.Slider(&solidModulationSettings.HueRate).label(F("Hue Rate")).range(0, 500, 1).attach(&SolidModulationChanged);
   b.Slider(&solidModulationSettings.SatDepth).label(F("Saturation Depth")).range(0, 1.0, 0.001, 3).attach(&SolidModulationChanged);
-  b.Slider(&solidModulationSettings.SatRate).label(F("Saturation Rate")).range(0, 1000, 10).attach(&SolidModulationChanged);
+  b.Slider(&solidModulationSettings.SatRate).label(F("Saturation Rate")).range(0, 500, 1).attach(&SolidModulationChanged);
   b.Slider(&solidModulationSettings.ValDepth).label(F("Value Depth")).range(0, 1.0, 0.001, 3).attach(&SolidModulationChanged);
-  b.Slider(&solidModulationSettings.ValRate).label(F("Value Rate")).range(0, 1000, 10).attach(&SolidModulationChanged);
+  b.Slider(&solidModulationSettings.ValRate).label(F("Value Rate")).range(0, 500, 1).attach(&SolidModulationChanged);
   b.Button().label(F("Debug")).attach(&SendDebug);
   b.show(true);
 
@@ -240,7 +240,9 @@ void solidColorAnimation() {
   if (solidModulationSettings.Enabled) {
     hue += ((inoise16(ms * solidModulationSettings.HueRate, 0, 0) >> 8) - 128) * solidModulationSettings.HueDepth;
     saturation += ((inoise16(ms * solidModulationSettings.SatRate, 1000, 1000) >> 8) - 128) * solidModulationSettings.SatDepth;
+    saturation = constrain(saturation, 0, 255);
     value += ((inoise16(ms * solidModulationSettings.ValRate, 2000, 2000) >> 8) - 128) * solidModulationSettings.ValDepth;
+    value = constrain(value, 0, 255);
   }
 
   if (SendDebug) {
