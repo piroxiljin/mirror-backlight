@@ -1,8 +1,8 @@
 {
   "name": "Mirror Backlight",
   "about": "Проект подсветки для круглого зеркала.",
-  "version": "0.1",
-  "notes": "Подключение к WiFi, сохранение настроек в разделе файловой системы",
+  "version": "0.1.1",
+  "notes": "Мерцание с использованием PerlinNoise",
   "builds": [
     {
       "chipFamily": "ESP8266",
