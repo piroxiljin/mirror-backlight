@@ -1,8 +1,8 @@
 {
   "name": "Mirror Backlight",
   "about": "Проект подсветки для круглого зеркала.",
-  "version": "0.1.2",
-  "notes": "Мерцание с использованием PerlinNoise",
+  "version": "0.1.3",
+  "notes": "Отключение MQTT",
   "builds": [
     {
       "chipFamily": "ESP8266",

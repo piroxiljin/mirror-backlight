@@ -15,7 +15,7 @@
 
 #include "ColorConverterLib.h"
 
-#define VERSION "0.1.2"
+#define VERSION "0.1.3"
 
 GyverHub hub;
 PairsFile data(&LittleFS, "/data.dat", 3000);
@@ -101,7 +101,9 @@ void onConnectClicked(gh::Build& b) {
 
 // билдер
 void build(gh::Builder& b) {
-  b.Menu("Calibrate");
+  b.Menu("Backlight;Calibrate;Device");
+
+  b.show(b.menu() == 0);
 
   b.Title(F("Common"));
   b.Slider_(BrightnessStr, &data).label(FPSTR(BrightnessStr)).attach(onBrightnessChanged).range(0, 255, 1);
@@ -130,7 +132,7 @@ void build(gh::Builder& b) {
 
   bool &modEnabled = solidModulationSettings.Enabled;
   b.Switch(&solidModulationSettings.Enabled).label(F("Modulate")).attach(&SolidModulationChanged);
-  b.show(modEnabled);
+  b.show(modEnabled && b.menu() == 0);
   b.Slider(&solidModulationSettings.HueDepth).label(F("Hue Depth")).range(0, 1.0, 0.001, 3).attach(&SolidModulationChanged);
   b.Slider(&solidModulationSettings.HueRate).label(F("Hue Rate")).range(0, 500, 1).attach(&SolidModulationChanged);
   b.Slider(&solidModulationSettings.SatDepth).label(F("Saturation Depth")).range(0, 1.0, 0.001, 3).attach(&SolidModulationChanged);
@@ -138,7 +140,12 @@ void build(gh::Builder& b) {
   b.Slider(&solidModulationSettings.ValDepth).label(F("Value Depth")).range(0, 1.0, 0.001, 3).attach(&SolidModulationChanged);
   b.Slider(&solidModulationSettings.ValRate).label(F("Value Rate")).range(0, 500, 1).attach(&SolidModulationChanged);
   b.Button().label(F("Debug")).attach(&SendDebug);
-  b.show(true);
+  b.show(b.menu() == 0);
+
+  // Calibration
+  b.show(b.menu() == 1);
+
+  b.show(b.menu() == 2);
 
   b.Title(F("Device"));
   b.Input_(FPSTR(DeviceNameStr), &data).label(F("Device name"));
@@ -150,17 +157,6 @@ void build(gh::Builder& b) {
 
 void setup() {
 
-#ifdef GH_ESP_BUILD
-
-  hub.mqtt.config("test.mosquitto.org", 1883);  // + MQTT
-
-  // ИЛИ
-
-  // режим точки доступа
-  // WiFi.mode(WIFI_AP);
-  // WiFi.softAP("My Hub");
-  // Serial.println(WiFi.softAPIP());
-#endif
   LittleFS.begin();
   data.begin();
   if (!data.get(FPSTR(BrightnessStr)).valid()) {
@@ -207,6 +203,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println(F("Ready version " VERSION));
 
+#ifdef GH_ESP_BUILD
   String ssid = data.get("ssid").toString();
   String pass = data.get("pass").toString();
 
@@ -220,6 +217,7 @@ void setup() {
   });
 
   WiFiConnector.connect(ssid, pass);
+#endif
 
   FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS);  // GRB ordering is assumed
   uint8_t bright = data.get(FPSTR(BrightnessStr));
