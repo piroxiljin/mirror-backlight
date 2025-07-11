@@ -15,7 +15,7 @@
 
 #include "ColorConverterLib.h"
 
-#define VERSION "0.1.3"
+#define VERSION "0.1.4"
 
 GyverHub hub;
 PairsFile data(&LittleFS, "/data.dat", 3000);
@@ -40,6 +40,7 @@ CRGB leds[NUM_LEDS];
 enum ELightModes {
   LightMode_HueWave = 0,
   LightMode_Solid,
+  LightMode_Clock,
   LightMode_Count,
 };
 
@@ -65,9 +66,14 @@ int solid_r = 128, solid_g = 0, solid_b = 0;
 SolidModulation solidModulationSettings;
 gh::Flag SolidModulationChanged;
 
+const int MENU_COMMON = 0;
+const int MENU_CALIBRATION = 1;
+const int MENU_DEVICE = 2;
+
 PGM_P BrightnessStr PROGMEM = "Brightness";
 PGM_P EnabledAnimationStr PROGMEM  = "EnabledAnimation";
 PGM_P SwitchIntervalStr PROGMEM  = "SwitchInterval";
+PGM_P CalibDownLEDStr PROGMEM  = "CalibDownLED";
 PGM_P DeviceNameStr PROGMEM  = "DeviceName";
 PGM_P SolidModulationStr PROGMEM  = "SolidModulation";
 
@@ -103,7 +109,7 @@ void onConnectClicked(gh::Build& b) {
 void build(gh::Builder& b) {
   b.Menu("Backlight;Calibrate;Device");
 
-  b.show(b.menu() == 0);
+  b.show(b.menu() == MENU_COMMON);
 
   b.Title(F("Common"));
   b.Slider_(BrightnessStr, &data).label(FPSTR(BrightnessStr)).attach(onBrightnessChanged).range(0, 255, 1);
@@ -140,12 +146,14 @@ void build(gh::Builder& b) {
   b.Slider(&solidModulationSettings.ValDepth).label(F("Value Depth")).range(0, 1.0, 0.001, 3).attach(&SolidModulationChanged);
   b.Slider(&solidModulationSettings.ValRate).label(F("Value Rate")).range(0, 500, 1).attach(&SolidModulationChanged);
   b.Button().label(F("Debug")).attach(&SendDebug);
-  b.show(b.menu() == 0);
+  b.show(b.menu() == MENU_COMMON);
 
   // Calibration
-  b.show(b.menu() == 1);
+  b.show(b.menu() == MENU_CALIBRATION);
+  b.Title(F("Calibration"));
+  b.Slider_(FPSTR(CalibDownLEDStr), &data).label(F("Down direction")).range(0, NUM_LEDS-1, 1);
 
-  b.show(b.menu() == 2);
+  b.show(b.menu() == MENU_DEVICE);
 
   b.Title(F("Device"));
   b.Input_(FPSTR(DeviceNameStr), &data).label(F("Device name"));
@@ -156,7 +164,6 @@ void build(gh::Builder& b) {
 }
 
 void setup() {
-
   LittleFS.begin();
   data.begin();
   if (!data.get(FPSTR(BrightnessStr)).valid()) {
@@ -169,6 +176,9 @@ void setup() {
   }
   if (!data.get(FPSTR(SwitchIntervalStr)).valid()) {
     data[FPSTR(SwitchIntervalStr)] = 5.0;
+  }
+    if (!data.get(FPSTR(CalibDownLEDStr)).valid()) {
+    data[FPSTR(CalibDownLEDStr)] = 0;
   }
   if (!data.get("SolidR").valid()) {
     data["SolidR"] = 255;
@@ -226,6 +236,16 @@ void setup() {
   fEnabledAnimations = FlagsFromString(data.get(FPSTR(EnabledAnimationStr)));
 }
 
+void showCalibration() {
+  
+  const int downLED = data[FPSTR(CalibDownLEDStr)].toInt();
+
+  for (int i = 0; i < NUM_LEDS; i++) {
+    //leds[i] = CRGB(solid_r, solid_g, solid_b);
+    leds[i] = i == downLED ? CRGB::White : CRGB::Black;
+  }
+}
+
 void solidColorAnimation() {
   uint32_t ms = millis();
   
@@ -254,6 +274,7 @@ void solidColorAnimation() {
   }
 
   for (int i = 0; i < NUM_LEDS; i++) {
+    //leds[i] = CRGB(solid_r, solid_g, solid_b);
     leds[i] = CHSV(hue, saturation, value);
   }
 }
@@ -298,13 +319,17 @@ void loop() {
     modeTimer.startInterval(switchInterval);
   }
 
-  switch (g_LightMode) {
-    case LightMode_HueWave:
-      hueWaveAnimation();
-      break;
-    case LightMode_Solid:
-      solidColorAnimation();
-      break;
+  if (hub.menu == MENU_CALIBRATION) {
+    showCalibration();
+  } else {
+    switch (g_LightMode) {
+      case LightMode_HueWave:
+        hueWaveAnimation();
+        break;
+      case LightMode_Solid:
+        solidColorAnimation();
+        break;
+    }
   }
 
   FastLED.show();
