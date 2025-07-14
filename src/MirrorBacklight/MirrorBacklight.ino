@@ -15,7 +15,7 @@
 
 #include "ColorConverterLib.h"
 
-#define VERSION "0.1.4"
+#define VERSION "0.1.5"
 
 GyverHub hub;
 PairsFile data(&LittleFS, "/data.dat", 3000);
@@ -113,7 +113,7 @@ void build(gh::Builder& b) {
 
   b.Title(F("Common"));
   b.Slider_(BrightnessStr, &data).label(FPSTR(BrightnessStr)).attach(onBrightnessChanged).range(0, 255, 1);
-  if (b.Flags_(FPSTR(EnabledAnimationStr), &fEnabledAnimations).label(F("Enabled animation")).text(F("Hue Wave;Solid Color")).click()) {
+  if (b.Flags_(FPSTR(EnabledAnimationStr), &fEnabledAnimations).label(F("Enabled animation")).text(F("Hue Wave;Solid Color;Clock")).click()) {
     Serial.print(fEnabledAnimations.toString());
     data[FPSTR(EnabledAnimationStr)] = fEnabledAnimations.toString();
   };
@@ -296,6 +296,17 @@ void hueWaveAnimation() {
   }
 }
 
+void clockAnimation() {
+  const int downLED = data[FPSTR(CalibDownLEDStr)].toInt();
+
+  CHSV back = CHSV(0, 0, 0);
+  CHSV dash = CHSV(0, 0, 255);
+  int dashPeriod = NUM_LEDS / 12;
+  for(int i = 0; i < NUM_LEDS; ++i) {
+    leds[i] =  (((i - downLED) % NUM_LEDS) % dashPeriod) ? back : dash;
+  }
+}
+
 void loop() {
   hub.tick();
   WiFiConnector.tick();
@@ -328,6 +339,9 @@ void loop() {
         break;
       case LightMode_Solid:
         solidColorAnimation();
+        break;
+      case LightMode_Clock:
+        clockAnimation();
         break;
     }
   }
