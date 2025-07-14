@@ -15,7 +15,7 @@
 
 #include "ColorConverterLib.h"
 
-#define VERSION "0.1.5"
+#define VERSION "0.1.6"
 
 GyverHub hub;
 PairsFile data(&LittleFS, "/data.dat", 3000);
@@ -76,6 +76,15 @@ PGM_P SwitchIntervalStr PROGMEM  = "SwitchInterval";
 PGM_P CalibDownLEDStr PROGMEM  = "CalibDownLED";
 PGM_P DeviceNameStr PROGMEM  = "DeviceName";
 PGM_P SolidModulationStr PROGMEM  = "SolidModulation";
+
+template<typename T>
+T t_map(T x, T in_min, T in_max, T out_min, T out_max) {
+    const T dividend = out_max - out_min;
+    const T divisor = in_max - in_min;
+    const T delta = x - in_min;
+
+    return (delta * dividend + (divisor / 2)) / divisor + out_min;
+}
 
 gh::Flags FlagsFromString(const String& s) {
   gh::Flags result;
@@ -301,9 +310,14 @@ void clockAnimation() {
 
   CHSV back = CHSV(0, 0, 0);
   CHSV dash = CHSV(0, 0, 255);
-  int dashPeriod = NUM_LEDS / 12;
+  float dashPeriod = NUM_LEDS / 12.f;
+  float dashRate = 1.0 / dashPeriod;
   for(int i = 0; i < NUM_LEDS; ++i) {
-    leds[i] =  (((i - downLED) % NUM_LEDS) % dashPeriod) ? back : dash;
+    float part = ((i - downLED) % NUM_LEDS) / dashPeriod;
+    float fract = part - floor(part);
+    float mapped = t_map(fract, dashRate, dashRate * 2, 0.f, 1.f);
+    float alpha = constrain(mapped, 0, 1);
+    leds[i] = dash * (1 - alpha) + back * alpha;
   }
 }
 
